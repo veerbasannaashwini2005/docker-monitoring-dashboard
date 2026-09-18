@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Docker Monitoring Dashboard</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<div class="dashboard">
+
+    <header>
+        <h1>Docker Monitoring Dashboard</h1>
+        <p>Real-time container monitoring</p>
+    </header>
+
+    <div class="cards">
+
+        <div class="card">
+            <h2>Container Status</h2>
+            <p id="status" class="status">Loading...</p>
+        </div>
+
+        <div class="card">
+            <h2>CPU Usage</h2>
+            <p id="cpu">Loading...</p>
+        </div>
+
+        <div class="card">
+            <h2>Memory Usage</h2>
+            <p id="memory">Loading...</p>
+        </div>
+
+        <div class="card">
+            <h2>Memory Usage %</h2>
+            <p id="memory-percent">Loading...</p>
+        </div>
+
+        <div class="card">
+            <h2>Container Name</h2>
+            <p id="container-name" class="small-text">Loading...</p>
+        </div>
+
+        <div class="card">
+            <h2>Container Uptime</h2>
+            <p id="uptime">Loading...</p>
+        </div>
+
+    </div>
+
+    <div class="chart-card">
+        <h2>Resource Usage</h2>
+
+        <canvas id="monitoringChart" width="900" height="350"></canvas>
+    </div>
+
+    <div class="info-card">
+
+        <div>
+            <strong>Current Time</strong>
+            <span id="current-time">--:--:--</span>
+        </div>
+
+        <div>
+            <strong>Last Updated</strong>
+            <span id="last-updated">--:--:--</span>
+        </div>
+
+    </div>
+
+</div>
+
+<script src="script.js"></script>
+
+</body>
+</html>
