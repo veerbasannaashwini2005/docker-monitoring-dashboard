@@ -1,1 +1,803 @@
-[]
+[
+    
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "SUCCESS",
+    "message": "Container recovered successfully",
+    "timestamp": "2026-10-06T11:57:28.669Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "STARTED",
+    "message": "Automatic container restart started",
+    "timestamp": "2026-10-06T11:57:23.107Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "DETECTED",
+    "message": "Unhealthy container detected",
+    "timestamp": "2026-10-06T11:57:23.098Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "STARTED",
+    "message": "Automatic container restart started",
+    "timestamp": "2026-10-06T11:56:51.737Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "DETECTED",
+    "message": "Unhealthy container detected",
+    "timestamp": "2026-10-06T11:56:51.730Z"
+  },
+  {
+    "container": "monitoring-dashboard",
+    "containerId": "4c39a5f32b79",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "STARTED",
+    "message": "Automatic container restart started",
+    "timestamp": "2026-10-06T11:56:41.716Z"
+  },
+  {
+    "container": "monitoring-dashboard",
+    "containerId": "4c39a5f32b79",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "DETECTED",
+    "message": "Unhealthy container detected",
+    "timestamp": "2026-10-06T11:56:41.710Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "SUCCESS",
+    "message": "Container recovered successfully",
+    "timestamp": "2026-10-06T11:56:17.323Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "STARTED",
+    "message": "Automatic container restart started",
+    "timestamp": "2026-10-06T11:56:11.736Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "DETECTED",
+    "message": "Unhealthy container detected",
+    "timestamp": "2026-10-06T11:56:11.730Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "SUCCESS",
+    "message": "Container recovered successfully",
+    "timestamp": "2026-10-06T11:55:37.291Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "STARTED",
+    "message": "Automatic container restart started",
+    "timestamp": "2026-10-06T11:55:31.731Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "DETECTED",
+    "message": "Unhealthy container detected",
+    "timestamp": "2026-10-06T11:55:31.725Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "SUCCESS",
+    "message": "Container recovered successfully",
+    "timestamp": "2026-10-06T11:54:57.339Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "STARTED",
+    "message": "Automatic container restart started",
+    "timestamp": "2026-10-06T11:54:51.748Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "DETECTED",
+    "message": "Unhealthy container detected",
+    "timestamp": "2026-10-06T11:54:51.742Z"
+  },
+  {
+    "container": "monitoring-dashboard",
+    "containerId": "4c39a5f32b79",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "STARTED",
+    "message": "Automatic container restart started",
+    "timestamp": "2026-10-06T11:54:30.619Z"
+  },
+  {
+    "container": "monitoring-dashboard",
+    "containerId": "4c39a5f32b79",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "DETECTED",
+    "message": "Unhealthy container detected",
+    "timestamp": "2026-10-06T11:54:30.613Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "SUCCESS",
+    "message": "Container recovered successfully",
+    "timestamp": "2026-10-06T11:54:26.187Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "STARTED",
+    "message": "Automatic container restart started",
+    "timestamp": "2026-10-06T11:54:20.604Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "DETECTED",
+    "message": "Unhealthy container detected",
+    "timestamp": "2026-10-06T11:54:20.597Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "SUCCESS",
+    "message": "Container recovered successfully",
+    "timestamp": "2026-10-06T11:53:46.147Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "STARTED",
+    "message": "Automatic container restart started",
+    "timestamp": "2026-10-06T11:53:40.636Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "DETECTED",
+    "message": "Unhealthy container detected",
+    "timestamp": "2026-10-06T11:53:40.631Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "SUCCESS",
+    "message": "Container recovered successfully",
+    "timestamp": "2026-10-06T11:53:06.237Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "STARTED",
+    "message": "Automatic container restart started",
+    "timestamp": "2026-10-06T11:53:00.625Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "DETECTED",
+    "message": "Unhealthy container detected",
+    "timestamp": "2026-10-06T11:53:00.618Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "STARTED",
+    "message": "Automatic container restart started",
+    "timestamp": "2026-10-06T11:52:29.497Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "DETECTED",
+    "message": "Unhealthy container detected",
+    "timestamp": "2026-10-06T11:52:29.490Z"
+  },
+  {
+    "container": "monitoring-dashboard",
+    "containerId": "4c39a5f32b79",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "STARTED",
+    "message": "Automatic container restart started",
+    "timestamp": "2026-10-06T11:52:19.451Z"
+  },
+  {
+    "container": "monitoring-dashboard",
+    "containerId": "4c39a5f32b79",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "DETECTED",
+    "message": "Unhealthy container detected",
+    "timestamp": "2026-10-06T11:52:19.446Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "SUCCESS",
+    "message": "Container recovered successfully",
+    "timestamp": "2026-10-06T11:51:55.108Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "STARTED",
+    "message": "Automatic container restart started",
+    "timestamp": "2026-10-06T11:51:49.514Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "DETECTED",
+    "message": "Unhealthy container detected",
+    "timestamp": "2026-10-06T11:51:49.509Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "SUCCESS",
+    "message": "Container recovered successfully",
+    "timestamp": "2026-10-06T11:51:15.048Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "STARTED",
+    "message": "Automatic container restart started",
+    "timestamp": "2026-10-06T11:51:09.477Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "DETECTED",
+    "message": "Unhealthy container detected",
+    "timestamp": "2026-10-06T11:51:09.472Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "SUCCESS",
+    "message": "Container recovered successfully",
+    "timestamp": "2026-10-06T11:50:35.140Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "STARTED",
+    "message": "Automatic container restart started",
+    "timestamp": "2026-10-06T11:50:29.500Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "DETECTED",
+    "message": "Unhealthy container detected",
+    "timestamp": "2026-10-06T11:50:29.494Z"
+  },
+  {
+    "container": "monitoring-dashboard",
+    "containerId": "4c39a5f32b79",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "STARTED",
+    "message": "Automatic container restart started",
+    "timestamp": "2026-10-06T11:50:08.440Z"
+  },
+  {
+    "container": "monitoring-dashboard",
+    "containerId": "4c39a5f32b79",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "DETECTED",
+    "message": "Unhealthy container detected",
+    "timestamp": "2026-10-06T11:50:08.434Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "SUCCESS",
+    "message": "Container recovered successfully",
+    "timestamp": "2026-10-06T11:50:03.968Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "STARTED",
+    "message": "Automatic container restart started",
+    "timestamp": "2026-10-06T11:49:58.443Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "DETECTED",
+    "message": "Unhealthy container detected",
+    "timestamp": "2026-10-06T11:49:58.438Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "SUCCESS",
+    "message": "Container recovered successfully",
+    "timestamp": "2026-10-06T11:49:24.055Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "STARTED",
+    "message": "Automatic container restart started",
+    "timestamp": "2026-10-06T11:49:18.476Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "DETECTED",
+    "message": "Unhealthy container detected",
+    "timestamp": "2026-10-06T11:49:18.470Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "SUCCESS",
+    "message": "Container recovered successfully",
+    "timestamp": "2026-10-06T11:48:44.408Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "STARTED",
+    "message": "Automatic container restart started",
+    "timestamp": "2026-10-06T11:48:38.483Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "DETECTED",
+    "message": "Unhealthy container detected",
+    "timestamp": "2026-10-06T11:48:38.476Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "STARTED",
+    "message": "Automatic container restart started",
+    "timestamp": "2026-10-06T11:48:07.214Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "DETECTED",
+    "message": "Unhealthy container detected",
+    "timestamp": "2026-10-06T11:48:07.207Z"
+  },
+  {
+    "container": "monitoring-dashboard",
+    "containerId": "4c39a5f32b79",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "STARTED",
+    "message": "Automatic container restart started",
+    "timestamp": "2026-10-06T11:47:57.196Z"
+  },
+  {
+    "container": "monitoring-dashboard",
+    "containerId": "4c39a5f32b79",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "DETECTED",
+    "message": "Unhealthy container detected",
+    "timestamp": "2026-10-06T11:47:57.190Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "SUCCESS",
+    "message": "Container recovered successfully",
+    "timestamp": "2026-10-06T11:30:52.744Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "STARTED",
+    "message": "Automatic container restart started",
+    "timestamp": "2026-10-06T11:30:47.108Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "DETECTED",
+    "message": "Unhealthy container detected",
+    "timestamp": "2026-10-06T11:30:47.102Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "SUCCESS",
+    "message": "Container recovered successfully",
+    "timestamp": "2026-10-06T11:30:12.747Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "STARTED",
+    "message": "Automatic container restart started",
+    "timestamp": "2026-10-06T11:30:07.130Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "DETECTED",
+    "message": "Unhealthy container detected",
+    "timestamp": "2026-10-06T11:30:07.123Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "SUCCESS",
+    "message": "Container recovered successfully",
+    "timestamp": "2026-10-06T11:29:32.698Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "STARTED",
+    "message": "Automatic container restart started",
+    "timestamp": "2026-10-06T11:29:27.083Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "DETECTED",
+    "message": "Unhealthy container detected",
+    "timestamp": "2026-10-06T11:29:27.076Z"
+  },
+  {
+    "container": "monitoring-dashboard",
+    "containerId": "4c39a5f32b79",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "STARTED",
+    "message": "Automatic container restart started",
+    "timestamp": "2026-10-06T11:29:06.006Z"
+  },
+  {
+    "container": "monitoring-dashboard",
+    "containerId": "4c39a5f32b79",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "DETECTED",
+    "message": "Unhealthy container detected",
+    "timestamp": "2026-10-06T11:29:06.000Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "SUCCESS",
+    "message": "Container recovered successfully",
+    "timestamp": "2026-10-06T11:29:01.525Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "STARTED",
+    "message": "Automatic container restart started",
+    "timestamp": "2026-10-06T11:28:56.000Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "DETECTED",
+    "message": "Unhealthy container detected",
+    "timestamp": "2026-10-06T11:28:55.993Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "SUCCESS",
+    "message": "Container recovered successfully",
+    "timestamp": "2026-10-06T11:28:21.696Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "STARTED",
+    "message": "Automatic container restart started",
+    "timestamp": "2026-10-06T11:28:16.048Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "DETECTED",
+    "message": "Unhealthy container detected",
+    "timestamp": "2026-10-06T11:28:16.041Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "SUCCESS",
+    "message": "Container recovered successfully",
+    "timestamp": "2026-10-06T11:27:41.671Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "STARTED",
+    "message": "Automatic container restart started",
+    "timestamp": "2026-10-06T11:27:36.048Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "DETECTED",
+    "message": "Unhealthy container detected",
+    "timestamp": "2026-10-06T11:27:36.040Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "STARTED",
+    "message": "Automatic container restart started",
+    "timestamp": "2026-10-06T11:27:04.910Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "DETECTED",
+    "message": "Unhealthy container detected",
+    "timestamp": "2026-10-06T11:27:04.904Z"
+  },
+  {
+    "container": "monitoring-dashboard",
+    "containerId": "4c39a5f32b79",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "STARTED",
+    "message": "Automatic container restart started",
+    "timestamp": "2026-10-06T11:26:54.904Z"
+  },
+  {
+    "container": "monitoring-dashboard",
+    "containerId": "4c39a5f32b79",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "DETECTED",
+    "message": "Unhealthy container detected",
+    "timestamp": "2026-10-06T11:26:54.900Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "SUCCESS",
+    "message": "Container recovered successfully",
+    "timestamp": "2026-10-06T11:26:30.607Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "STARTED",
+    "message": "Automatic container restart started",
+    "timestamp": "2026-10-06T11:26:24.972Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "DETECTED",
+    "message": "Unhealthy container detected",
+    "timestamp": "2026-10-06T11:26:24.967Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "SUCCESS",
+    "message": "Container recovered successfully",
+    "timestamp": "2026-10-06T11:25:50.464Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "STARTED",
+    "message": "Automatic container restart started",
+    "timestamp": "2026-10-06T11:25:44.940Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "DETECTED",
+    "message": "Unhealthy container detected",
+    "timestamp": "2026-10-06T11:25:44.936Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "SUCCESS",
+    "message": "Container recovered successfully",
+    "timestamp": "2026-10-06T11:25:10.664Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "STARTED",
+    "message": "Automatic container restart started",
+    "timestamp": "2026-10-06T11:25:04.993Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "DETECTED",
+    "message": "Unhealthy container detected",
+    "timestamp": "2026-10-06T11:25:04.986Z"
+  },
+  {
+    "container": "monitoring-dashboard",
+    "containerId": "4c39a5f32b79",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "STARTED",
+    "message": "Automatic container restart started",
+    "timestamp": "2026-10-06T11:24:43.927Z"
+  },
+  {
+    "container": "monitoring-dashboard",
+    "containerId": "4c39a5f32b79",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "DETECTED",
+    "message": "Unhealthy container detected",
+    "timestamp": "2026-10-06T11:24:43.922Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "SUCCESS",
+    "message": "Container recovered successfully",
+    "timestamp": "2026-10-06T11:24:39.476Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "STARTED",
+    "message": "Automatic container restart started",
+    "timestamp": "2026-10-06T11:24:33.924Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "DETECTED",
+    "message": "Unhealthy container detected",
+    "timestamp": "2026-10-06T11:24:33.918Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "SUCCESS",
+    "message": "Container recovered successfully",
+    "timestamp": "2026-10-06T11:23:59.528Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "STARTED",
+    "message": "Automatic container restart started",
+    "timestamp": "2026-10-06T11:23:53.991Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "DETECTED",
+    "message": "Unhealthy container detected",
+    "timestamp": "2026-10-06T11:23:53.985Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "SUCCESS",
+    "message": "Container recovered successfully",
+    "timestamp": "2026-10-06T11:23:19.590Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "STARTED",
+    "message": "Automatic container restart started",
+    "timestamp": "2026-10-06T11:23:13.994Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "DETECTED",
+    "message": "Unhealthy container detected",
+    "timestamp": "2026-10-06T11:23:13.987Z"
+  },
+  {
+    "container": "unhealthy-test",
+    "containerId": "ad83438c4496",
+    "action": "AUTOMATIC_RECOVERY",
+    "status": "STARTED",
+    "message": "Automatic container restart started",
+    "timestamp": "2026-10-06T11:22:42.867Z"
+  }
+]

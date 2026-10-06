@@ -1,788 +1,318 @@
 
-const cpuHistory = [];
-
-const memoryHistory = [];
-
-const maxPoints = 20;
-
-let currentLogContainerId = null;
-
-let currentLogContainerName = "";
+let containers = [];
+let alerts = [];
+let cpuChart = null;
 
 
-/* ================================================= */
-/* TIME                                              */
-/* ================================================= */
+// =====================================================
+// LOAD CONTAINER STATS
+// =====================================================
 
-function updateTime() {
+async function loadStats() {
 
-    const now =
-        new Date();
+    try {
 
-    document.getElementById(
-        "current-time"
-    ).textContent =
-        now.toLocaleTimeString();
+        const response =
+            await fetch("/api/stats", {
+                cache: "no-store"
+            });
+
+        if (!response.ok) {
+            throw new Error(
+                "API returned " + response.status
+            );
+        }
+
+        const data =
+            await response.json();
+
+        console.log("Docker API data:", data);
+
+        if (!Array.isArray(data)) {
+            throw new Error(
+                "Invalid API response"
+            );
+        }
+
+        containers = data;
+
+        updateOverview();
+
+        renderAlerts();
+
+        renderContainers();
+
+        updateChart();
+
+        updateSystemStatus();
+
+        updateLastUpdated();
+
+    } catch (error) {
+
+        console.error(
+            "Failed to load Docker statistics:",
+            error
+        );
+
+        containers = [];
+
+        updateOverview();
+
+        renderAlerts();
+
+        renderContainers();
+
+        updateSystemStatus(false);
+
+    }
+
 }
 
 
-/* ================================================= */
-/* UPTIME                                            */
-/* ================================================= */
+// =====================================================
+// OVERVIEW
+// =====================================================
 
-function calculateUptime(
-    startedAt
-) {
+function updateOverview() {
 
-    if (!startedAt) {
+    const total =
+        containers.length;
 
-        return "N/A";
-    }
+    const running =
+        containers.filter(
+            c => c.status === "running"
+        ).length;
 
+    const stopped =
+        containers.filter(
+            c => c.status !== "running"
+        ).length;
 
-    const start =
-        new Date(
-            startedAt
-        ).getTime();
-
-
-    const elapsed =
-        Math.max(
-            0,
-            Math.floor(
-                (
-                    Date.now() -
-                    start
-                ) / 1000
-            )
-        );
-
-
-    const days =
-        Math.floor(
-            elapsed / 86400
-        );
-
-
-    const hours =
-        Math.floor(
-            (
-                elapsed % 86400
-            ) / 3600
-        );
-
-
-    const minutes =
-        Math.floor(
-            (
-                elapsed % 3600
-            ) / 60
-        );
-
-
-    if (days > 0) {
-
-        return `${days}d ${hours}h ${minutes}m`;
-    }
-
-
-    return `${hours}h ${minutes}m`;
-}
-
-
-/* ================================================= */
-/* CONNECTION                                        */
-/* ================================================= */
-
-function setConnectionStatus(
-    connected
-) {
-
-    const dot =
+    const totalElement =
         document.getElementById(
-            "connection-dot"
+            "total-containers"
         );
 
-
-    const status =
+    const runningElement =
         document.getElementById(
-            "connection-status"
+            "running-containers"
         );
 
-
-    if (connected) {
-
-        dot.className =
-            "connected";
-
-        status.textContent =
-            "Docker Connected";
-
-    } else {
-
-        dot.className =
-            "disconnected";
-
-        status.textContent =
-            "Docker Disconnected";
-    }
-}
-
-
-/* ================================================= */
-/* STATUS                                            */
-/* ================================================= */
-
-function getStatusClass(
-    status
-) {
-
-    if (!status) {
-
-        return "unknown";
-    }
-
-
-    const value =
-        status.toLowerCase();
-
-
-    if (
-        value ===
-        "running"
-    ) {
-
-        return "running";
-    }
-
-
-    if (
-        value === "exited" ||
-        value === "stopped" ||
-        value === "dead"
-    ) {
-
-        return "stopped";
-    }
-
-
-    return "unknown";
-}
-
-
-/* ================================================= */
-/* HEALTH                                            */
-/* ================================================= */
-
-function getHealthClass(
-    health
-) {
-
-    if (!health) {
-
-        return "health-none";
-    }
-
-
-    const value =
-        health.toLowerCase();
-
-
-    if (
-        value ===
-        "healthy"
-    ) {
-
-        return "health-healthy";
-    }
-
-
-    if (
-        value ===
-        "unhealthy"
-    ) {
-
-        return "health-unhealthy";
-    }
-
-
-    if (
-        value ===
-        "starting"
-    ) {
-
-        return "health-starting";
-    }
-
-
-    return "health-none";
-}
-
-
-/* ================================================= */
-/* HEALTH TEXT                                       */
-/* ================================================= */
-
-function formatHealth(
-    health
-) {
-
-    if (!health) {
-
-        return "NONE";
-    }
-
-
-    const value =
-        health.toLowerCase();
-
-
-    if (
-        value ===
-        "healthy"
-    ) {
-
-        return "HEALTHY";
-    }
-
-
-    if (
-        value ===
-        "unhealthy"
-    ) {
-
-        return "UNHEALTHY";
-    }
-
-
-    if (
-        value ===
-        "starting"
-    ) {
-
-        return "STARTING";
-    }
-
-
-    return "NONE";
-}
-
-
-/* ================================================= */
-/* CONTAINER RENDERING                               */
-/* ================================================= */
-
-function renderContainers(
-    containers
-) {
-
-    const list =
+    const stoppedElement =
         document.getElementById(
-            "container-list"
+            "stopped-containers"
         );
 
+    if (totalElement) {
+        totalElement.textContent = total;
+    }
 
-    if (
-        !containers ||
-        containers.length === 0
-    ) {
+    if (runningElement) {
+        runningElement.textContent = running;
+    }
 
-        list.innerHTML = `
+    if (stoppedElement) {
+        stoppedElement.textContent = stopped;
+    }
 
-            <div class="loading">
+}
 
-                No Docker containers found.
 
-            </div>
+// =====================================================
+// SYSTEM STATUS
+// =====================================================
 
-        `;
+function updateSystemStatus(apiWorking = true) {
+
+    const statusElement =
+        document.getElementById(
+            "system-status"
+        );
+
+    if (!statusElement) {
+        return;
+    }
+
+    if (!apiWorking) {
+
+        statusElement.textContent =
+            "DOWN";
+
+        statusElement.className =
+            "status-down";
 
         return;
     }
 
+    const unhealthy =
+        containers.filter(
+            c => c.health === "unhealthy"
+        ).length;
 
-    list.innerHTML = "";
+    const stopped =
+        containers.filter(
+            c => c.status !== "running"
+        ).length;
 
+    if (
+        containers.length > 0 &&
+        unhealthy === 0 &&
+        stopped === 0
+    ) {
 
-    containers.forEach(
-        container => {
+        statusElement.textContent =
+            "UP";
 
-            const statusClass =
-                getStatusClass(
-                    container.status
-                );
+        statusElement.className =
+            "status-up";
 
+    } else if (containers.length > 0) {
 
-            const healthClass =
-                getHealthClass(
-                    container.health
-                );
+        statusElement.textContent =
+            "WARNING";
 
+        statusElement.className =
+            "status-warning";
 
-            const healthText =
-                formatHealth(
-                    container.health
-                );
+    } else {
 
+        statusElement.textContent =
+            "DOWN";
 
-            const cpu =
-                parseFloat(
-                    container.cpu
-                ) || 0;
+        statusElement.className =
+            "status-down";
 
+    }
 
-            const memoryPercent =
-                parseFloat(
-                    container.memoryPercent
-                ) || 0;
-
-
-            const memoryMB =
-                container.memoryMB ||
-                0;
-
-
-            const restartCount =
-                container.restartCount ||
-                0;
-
-
-            const image =
-                container.image ||
-                "Unknown";
-
-
-            const ports =
-                container.ports &&
-                container.ports.length > 0
-
-                    ? [
-                        ...new Set(
-                            container.ports
-                        )
-                    ].join(", ")
-
-                    : "No ports";
-
-
-            const card =
-                document.createElement(
-                    "div"
-                );
-
-
-            card.className =
-                "container-card";
-
-
-            card.innerHTML = `
-
-                <div class="container-header">
-
-                    <div>
-
-                        <h3>
-                            ${container.name || "Unknown"}
-                        </h3>
-
-                        <span
-                            class="status-badge ${statusClass}"
-                        >
-
-                            ${container.status || "UNKNOWN"}
-
-                        </span>
-
-                    </div>
-
-
-                    <span class="container-id">
-
-                        ${
-                            container.id
-                                ? container.id.substring(
-                                    0,
-                                    12
-                                )
-                                : "N/A"
-                        }
-
-                    </span>
-
-                </div>
-
-
-                <div class="metric">
-
-                    <div class="metric-title">
-
-                        <span>
-                            CPU Usage
-                        </span>
-
-                        <strong>
-                            ${cpu.toFixed(2)}%
-                        </strong>
-
-                    </div>
-
-
-                    <div class="progress">
-
-                        <div
-                            class="progress-bar cpu-bar"
-                            style="
-                                width:
-                                ${Math.min(
-                                    cpu,
-                                    100
-                                )}%
-                            "
-                        ></div>
-
-                    </div>
-
-                </div>
-
-
-                <div class="metric">
-
-                    <div class="metric-title">
-
-                        <span>
-                            Memory Usage
-                        </span>
-
-                        <strong>
-                            ${memoryMB} MB
-                        </strong>
-
-                    </div>
-
-
-                    <div class="progress">
-
-                        <div
-                            class="progress-bar memory-bar"
-                            style="
-                                width:
-                                ${Math.min(
-                                    memoryPercent,
-                                    100
-                                )}%
-                            "
-                        ></div>
-
-                    </div>
-
-                </div>
-
-
-                <div class="container-details">
-
-                    <div>
-
-                        <span>
-                            Health
-                        </span>
-
-                        <strong
-                            class="health-badge ${healthClass}"
-                        >
-
-                            ${healthText}
-
-                        </strong>
-
-                    </div>
-
-
-                    <div>
-
-                        <span>
-                            Restarts
-                        </span>
-
-                        <strong>
-                            ${restartCount}
-                        </strong>
-
-                    </div>
-
-                </div>
-
-
-                <div class="image-info">
-
-                    <span>
-                        Image
-                    </span>
-
-                    <strong>
-                        ${image}
-                    </strong>
-
-                </div>
-
-
-                <div class="image-info">
-
-                    <span>
-                        Ports
-                    </span>
-
-                    <strong>
-                        ${ports}
-                    </strong>
-
-                </div>
-
-
-                <div class="container-footer">
-
-                    <span>
-
-                        Memory:
-                        ${memoryPercent.toFixed(2)}%
-
-                    </span>
-
-
-                    <span>
-
-                        Uptime:
-                        ${calculateUptime(
-                            container.startedAt
-                        )}
-
-                    </span>
-
-                </div>
-
-
-                <button
-                    class="logs-button"
-                    onclick="
-                        viewLogs(
-                            '${container.id}',
-                            '${container.name}'
-                        )
-                    "
-                >
-
-                    📋 View Logs
-
-                </button>
-
-            `;
-
-
-            list.appendChild(
-                card
-            );
-
-        }
-    );
 }
 
 
-/* ================================================= */
-/* ALERT GENERATION                                  */
-/* ================================================= */
+// =====================================================
+// ALERTS
+// =====================================================
 
-function generateAlerts(
-    containers
-) {
+function renderAlerts() {
 
-    const alerts = [];
+    alerts = [];
 
+    containers.forEach(container => {
 
-    containers.forEach(
-        container => {
+        if (
+            container.health ===
+            "unhealthy"
+        ) {
 
-            const name =
-                container.name ||
-                "Unknown";
+            alerts.push({
 
+                type: "danger",
 
-            const status =
-                container.status
-                    ? container.status.toLowerCase()
-                    : "";
+                title:
+                    "Unhealthy Container",
 
+                message:
+                    `${container.name} is unhealthy`
 
-            const health =
-                container.health
-                    ? container.health.toLowerCase()
-                    : "";
-
-
-            const cpu =
-                parseFloat(
-                    container.cpu
-                ) || 0;
-
-
-            const memory =
-                parseFloat(
-                    container.memoryPercent
-                ) || 0;
-
-
-            if (
-                status === "exited" ||
-                status === "stopped" ||
-                status === "dead"
-            ) {
-
-                alerts.push({
-
-                    type:
-                        "critical",
-
-                    icon:
-                        "🔴",
-
-                    title:
-                        `${name} is stopped`,
-
-                    message:
-                        "Container is not currently running."
-
-                });
-            }
-
-
-            if (
-                health ===
-                "unhealthy"
-            ) {
-
-                alerts.push({
-
-                    type:
-                        "critical",
-
-                    icon:
-                        "🚨",
-
-                    title:
-                        `${name} is unhealthy`,
-
-                    message:
-                        "Docker healthcheck has failed."
-
-                });
-            }
-
-
-            if (
-                cpu >= 80
-            ) {
-
-                alerts.push({
-
-                    type:
-                        "warning",
-
-                    icon:
-                        "🟠",
-
-                    title:
-                        `${name} has high CPU usage`,
-
-                    message:
-                        `CPU usage is ${cpu.toFixed(2)}%.`
-
-                });
-            }
-
-
-            if (
-                memory >= 80
-            ) {
-
-                alerts.push({
-
-                    type:
-                        "warning",
-
-                    icon:
-                        "🟠",
-
-                    title:
-                        `${name} has high memory usage`,
-
-                    message:
-                        `Memory usage is ${memory.toFixed(2)}%.`
-
-                });
-            }
+            });
 
         }
-    );
+
+        if (
+            container.status !==
+                "running"
+        ) {
+
+            alerts.push({
+
+                type: "warning",
+
+                title:
+                    "Container Stopped",
+
+                message:
+                    `${container.name} is ${container.status}`
+
+            });
+
+        }
+
+        if (
+            container.memoryPercent >
+            80
+        ) {
+
+            alerts.push({
+
+                type: "warning",
+
+                title:
+                    "High Memory Usage",
+
+                message:
+                    `${container.name} is using ${container.memoryPercent}% memory`
+
+            });
+
+        }
+
+        if (
+            container.cpu >
+            80
+        ) {
+
+            alerts.push({
+
+                type: "warning",
+
+                title:
+                    "High CPU Usage",
+
+                message:
+                    `${container.name} is using ${container.cpu}% CPU`
+
+            });
+
+        }
+
+    });
 
 
-    return alerts;
-}
-
-
-/* ================================================= */
-/* ALERT RENDERING                                   */
-/* ================================================= */
-
-function renderAlerts(
-    containers
-) {
-
-    const alertsList =
-        document.getElementById(
-            "alerts-list"
-        );
-
-
-    const alertCount =
+    const countElement =
         document.getElementById(
             "alert-count"
         );
 
+    if (countElement) {
 
-    if (
-        !alertsList ||
-        !alertCount
-    ) {
+        countElement.textContent =
+            alerts.length;
 
+    }
+
+
+    const container =
+        document.getElementById(
+            "alerts-container"
+        );
+
+    if (!container) {
         return;
     }
 
 
-    const alerts =
-        generateAlerts(
-            containers
-        );
+    if (alerts.length === 0) {
 
-
-    alertCount.textContent =
-        `${alerts.length} ${
-            alerts.length === 1
-                ? "Alert"
-                : "Alerts"
-        }`;
-
-
-    if (
-        alerts.length === 0
-    ) {
-
-        alertCount.className =
-            "alert-count no-alerts";
-
-
-        alertsList.innerHTML = `
+        container.innerHTML = `
 
             <div class="no-alerts">
 
-                ✅ No active alerts
+                <div class="alert-icon">
+                    ✅
+                </div>
+
+                <div>
+                    No active alerts
+                </div>
 
             </div>
 
@@ -792,47 +322,185 @@ function renderAlerts(
     }
 
 
-    alertCount.className =
-        "alert-count";
+    container.innerHTML =
+        alerts.map(alert => `
+
+            <div class="alert ${alert.type}">
+
+                <strong>
+                    ${alert.title}
+                </strong>
+
+                <span>
+                    ${alert.message}
+                </span>
+
+            </div>
+
+        `).join("");
+
+}
 
 
-    alertsList.innerHTML = "";
+// =====================================================
+// CONTAINER CARDS
+// =====================================================
+
+function renderContainers() {
+
+    const container =
+        document.getElementById(
+            "container-list"
+        );
+
+    if (!container) {
+        return;
+    }
 
 
-    alerts.forEach(
-        alert => {
+    if (containers.length === 0) {
 
-            const item =
-                document.createElement(
-                    "div"
-                );
+        container.innerHTML = `
+
+            <div class="empty-state">
+
+                <h3>
+                    No Docker containers found.
+                </h3>
+
+                <p>
+                    Docker API is currently unavailable.
+                </p>
+
+            </div>
+
+        `;
+
+        return;
+    }
 
 
-            item.className =
-                `alert-item ${alert.type}`;
+    container.innerHTML =
+        containers.map(c => {
+
+            const statusClass =
+                c.status === "running"
+                    ? "running"
+                    : "stopped";
+
+            const healthClass =
+                c.health === "unhealthy"
+                    ? "unhealthy"
+                    : "healthy";
 
 
-            item.innerHTML = `
+            return `
 
-                <div class="alert-icon">
+                <div class="container-card">
 
-                    ${alert.icon}
+                    <div class="container-header">
 
-                </div>
+                        <div>
 
+                            <h3>
+                                🐳 ${escapeHtml(c.name)}
+                            </h3>
 
-                <div class="alert-content">
+                            <small>
+                                ${escapeHtml(c.image)}
+                            </small>
 
-                    <div class="alert-title">
+                        </div>
 
-                        ${alert.title}
+                        <span class="container-status ${statusClass}">
+                            ${escapeHtml(c.status)}
+                        </span>
 
                     </div>
 
 
-                    <div class="alert-message">
+                    <div class="container-details">
 
-                        ${alert.message}
+                        <div class="detail">
+
+                            <span>
+                                Health
+                            </span>
+
+                            <strong class="${healthClass}">
+                                ${escapeHtml(c.health)}
+                            </strong>
+
+                        </div>
+
+
+                        <div class="detail">
+
+                            <span>
+                                CPU
+                            </span>
+
+                            <strong>
+                                ${c.cpu}%
+                            </strong>
+
+                        </div>
+
+
+                        <div class="detail">
+
+                            <span>
+                                Memory
+                            </span>
+
+                            <strong>
+                                ${c.memoryMB} MB
+                            </strong>
+
+                        </div>
+
+
+                        <div class="detail">
+
+                            <span>
+                                Memory %
+                            </span>
+
+                            <strong>
+                                ${c.memoryPercent}%
+                            </strong>
+
+                        </div>
+
+
+                        <div class="detail">
+
+                            <span>
+                                Restarts
+                            </span>
+
+                            <strong>
+                                ${c.restartCount}
+                            </strong>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="container-actions">
+
+                        <button
+                            onclick="viewLogs('${c.id}')"
+                        >
+                            📋 Logs
+                        </button>
+
+                        <button
+                            onclick="manualHeal('${c.id}')"
+                        >
+                            🔧 Heal
+                        </button>
 
                     </div>
 
@@ -840,33 +508,137 @@ function renderAlerts(
 
             `;
 
+        }).join("");
 
-            alertsList.appendChild(
-                item
-            );
-
-        }
-    );
 }
 
 
-/* ================================================= */
-/* SELF-HEALING HISTORY                              */
-/* ================================================= */
+// =====================================================
+// ESCAPE HTML
+// =====================================================
 
-async function loadHealingHistory() {
+function escapeHtml(value) {
 
-    const container =
+    if (value === null ||
+        value === undefined) {
+
+        return "";
+
+    }
+
+    return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+
+}
+
+
+// =====================================================
+// RESOURCE CHART
+// =====================================================
+
+function updateChart() {
+
+    const canvas =
         document.getElementById(
-            "healing-history"
+            "resourceChart"
+        );
+
+    if (!canvas ||
+        typeof Chart === "undefined") {
+
+        return;
+
+    }
+
+
+    const labels =
+        containers.map(
+            c => c.name
+        );
+
+    const cpuData =
+        containers.map(
+            c => c.cpu
+        );
+
+    const memoryData =
+        containers.map(
+            c => c.memoryMB
         );
 
 
-    if (!container) {
-
-        return;
+    if (cpuChart) {
+        cpuChart.destroy();
     }
 
+
+    cpuChart =
+        new Chart(canvas, {
+
+            type: "bar",
+
+            data: {
+
+                labels: labels,
+
+                datasets: [
+
+                    {
+
+                        label:
+                            "CPU %",
+
+                        data:
+                            cpuData
+
+                    },
+
+                    {
+
+                        label:
+                            "Memory MB",
+
+                        data:
+                            memoryData
+
+                    }
+
+                ]
+
+            },
+
+            options: {
+
+                responsive: true,
+
+                maintainAspectRatio: false,
+
+                scales: {
+
+                    y: {
+
+                        beginAtZero: true
+
+                    }
+
+                }
+
+            }
+
+        });
+
+}
+
+
+// =====================================================
+// SELF-HEALING HISTORY
+// =====================================================
+
+async function loadHealingHistory() {
 
     try {
 
@@ -874,177 +646,20 @@ async function loadHealingHistory() {
             await fetch(
                 "/api/self-healing/history",
                 {
-                    cache:
-                        "no-store"
+                    cache: "no-store"
                 }
             );
-
 
         if (!response.ok) {
-
             throw new Error(
-                "Unable to load healing history"
+                "History API error"
             );
         }
 
-
-        const data =
+        const history =
             await response.json();
 
-
-        const history =
-            Array.isArray(
-                data.history
-            )
-                ? data.history
-                : [];
-
-
-        if (
-            history.length === 0
-        ) {
-
-            container.innerHTML = `
-
-                <div class="healing-empty">
-
-                    ✅ No self-healing events recorded.
-
-                </div>
-
-            `;
-
-            return;
-        }
-
-
-        container.innerHTML = "";
-
-
-        history.forEach(
-            record => {
-
-                const item =
-                    document.createElement(
-                        "div"
-                    );
-
-
-                item.className =
-                    "healing-item";
-
-
-                const date =
-                    new Date(
-                        record.timestamp
-                    );
-
-
-                const formattedTime =
-                    date.toLocaleString();
-
-
-                let icon =
-                    "ℹ️";
-
-
-                if (
-                    record.status ===
-                    "SUCCESS"
-                ) {
-
-                    icon =
-                        "✅";
-
-                } else if (
-                    record.status ===
-                    "FAILED"
-                ) {
-
-                    icon =
-                        "❌";
-
-                } else if (
-                    record.status ===
-                    "DETECTED"
-                ) {
-
-                    icon =
-                        "🚨";
-
-                } else if (
-                    record.status ===
-                    "STARTED"
-                ) {
-
-                    icon =
-                        "🔧";
-                }
-
-
-                item.innerHTML = `
-
-                    <div class="healing-icon">
-
-                        ${icon}
-
-                    </div>
-
-
-                    <div class="healing-content">
-
-                        <div class="healing-top">
-
-                            <strong>
-                                ${record.container}
-                            </strong>
-
-                            <span
-                                class="
-                                    healing-status
-                                    ${record.status.toLowerCase()}
-                                "
-                            >
-
-                                ${record.status}
-
-                            </span>
-
-                        </div>
-
-
-                        <div class="healing-action">
-
-                            ${record.action}
-
-                        </div>
-
-
-                        <div class="healing-message">
-
-                            ${record.message}
-
-                        </div>
-
-
-                        <div class="healing-time">
-
-                            ${formattedTime}
-
-                        </div>
-
-                    </div>
-
-                `;
-
-
-                container.appendChild(
-                    item
-                );
-
-            }
-        );
-
+        renderHealingHistory(history);
 
     } catch (error) {
 
@@ -1053,653 +668,243 @@ async function loadHealingHistory() {
             error
         );
 
+    }
+
+}
+
+
+// =====================================================
+// RENDER HEALING HISTORY
+// =====================================================
+
+function renderHealingHistory(history) {
+
+    const container =
+        document.getElementById(
+            "healing-history"
+        );
+
+    if (!container) {
+        return;
+    }
+
+
+    if (
+        !Array.isArray(history) ||
+        history.length === 0
+    ) {
 
         container.innerHTML = `
 
             <div class="healing-empty">
 
-                ❌ Unable to load self-healing history.
+                🔄 No self-healing events recorded.
 
             </div>
 
         `;
-    }
-}
-
-
-/* ================================================= */
-/* OVERVIEW                                          */
-/* ================================================= */
-
-function updateOverview(
-    containers
-) {
-
-    const total =
-        containers.length;
-
-
-    const running =
-        containers.filter(
-            container =>
-                container.status &&
-                container.status.toLowerCase() ===
-                "running"
-        ).length;
-
-
-    const stopped =
-        total -
-        running;
-
-
-    document.getElementById(
-        "total-containers"
-    ).textContent =
-        total;
-
-
-    document.getElementById(
-        "running-containers"
-    ).textContent =
-        running;
-
-
-    document.getElementById(
-        "stopped-containers"
-    ).textContent =
-        stopped;
-
-
-    const system =
-        document.getElementById(
-            "system-status"
-        );
-
-
-    const unhealthy =
-        containers.filter(
-            container =>
-                container.health &&
-                container.health.toLowerCase() ===
-                "unhealthy"
-        ).length;
-
-
-    if (
-        unhealthy > 0
-    ) {
-
-        system.textContent =
-            "CRITICAL";
-
-        system.className =
-            "system-critical";
 
         return;
     }
 
 
-    if (
-        running === total &&
-        total > 0
-    ) {
-
-        system.textContent =
-            "HEALTHY";
-
-        system.className =
-            "system-healthy";
-
-    } else if (
-        running > 0
-    ) {
-
-        system.textContent =
-            "WARNING";
-
-        system.className =
-            "system-warning";
-
-    } else {
-
-        system.textContent =
-            "DOWN";
-
-        system.className =
-            "system-critical";
-    }
-}
-
-
-/* ================================================= */
-/* CHART                                             */
-/* ================================================= */
-
-function drawChart() {
-
-    const canvas =
-        document.getElementById(
-            "monitoringChart"
-        );
-
-
-    if (!canvas) {
-
-        return;
-    }
-
-
-    const ctx =
-        canvas.getContext(
-            "2d"
-        );
-
-
-    const width =
-        canvas.clientWidth ||
-        900;
-
-
-    const height =
-        350;
-
-
-    canvas.width =
-        width;
-
-
-    canvas.height =
-        height;
-
-
-    ctx.clearRect(
-        0,
-        0,
-        width,
-        height
-    );
-
-
-    const left =
-        50;
-
-
-    const right =
-        20;
-
-
-    const top =
-        30;
-
-
-    const bottom =
-        45;
-
-
-    const chartWidth =
-        width -
-        left -
-        right;
-
-
-    const chartHeight =
-        height -
-        top -
-        bottom;
-
-
-    ctx.fillStyle =
-        "#ffffff";
-
-
-    ctx.fillRect(
-        0,
-        0,
-        width,
-        height
-    );
-
-
-    ctx.strokeStyle =
-        "#e5e7eb";
-
-
-    ctx.lineWidth =
-        1;
-
-
-    for (
-        let i = 0;
-        i <= 5;
-        i++
-    ) {
-
-        const y =
-            top +
-            (
-                chartHeight /
-                5
-            ) *
-            i;
-
-
-        ctx.beginPath();
-
-
-        ctx.moveTo(
-            left,
-            y
-        );
-
-
-        ctx.lineTo(
-            width - right,
-            y
-        );
-
-
-        ctx.stroke();
-
-
-        ctx.fillStyle =
-            "#64748b";
-
-
-        ctx.font =
-            "12px Arial";
-
-
-        const value =
-            100 -
-            i * 20;
-
-
-        ctx.fillText(
-            `${value}%`,
-            10,
-            y + 4
-        );
-    }
-
-
-    function drawLine(
-        data,
-        lineColor
-    ) {
-
-        if (
-            data.length === 0
-        ) {
-
-            return;
-        }
-
-
-        ctx.strokeStyle =
-            lineColor;
-
-
-        ctx.lineWidth =
-            3;
-
-
-        ctx.beginPath();
-
-
-        data.forEach(
-            (
-                value,
-                index
-            ) => {
-
-                const x =
-                    left +
-                    (
-                        index /
-                        Math.max(
-                            maxPoints - 1,
-                            1
-                        )
-                    ) *
-                    chartWidth;
-
-
-                const y =
-                    top +
-                    chartHeight -
-                    (
-                        Math.min(
-                            value,
-                            100
-                        ) /
-                        100
-                    ) *
-                    chartHeight;
-
-
-                if (
-                    index === 0
-                ) {
-
-                    ctx.moveTo(
-                        x,
-                        y
-                    );
-
-                } else {
-
-                    ctx.lineTo(
-                        x,
-                        y
-                    );
-                }
-
+    container.innerHTML =
+        history.slice(0, 20)
+        .map(item => {
+
+            let icon = "🔄";
+
+            if (
+                item.status ===
+                "SUCCESS"
+            ) {
+                icon = "✅";
             }
-        );
+
+            if (
+                item.status ===
+                "FAILED"
+            ) {
+                icon = "❌";
+            }
+
+            if (
+                item.status ===
+                "DETECTED"
+            ) {
+                icon = "⚠️";
+            }
 
 
-        ctx.stroke();
-    }
+            return `
 
+                <div class="healing-item">
 
-    drawLine(
-        cpuHistory,
-        "#2563eb"
-    );
+                    <div class="healing-icon">
+                        ${icon}
+                    </div>
 
+                    <div class="healing-content">
 
-    drawLine(
-        memoryHistory,
-        "#16a34a"
-    );
+                        <div class="healing-top">
+
+                            <strong>
+                                ${escapeHtml(item.container)}
+                            </strong>
+
+                            <span class="healing-status ${String(item.status || "").toLowerCase()}">
+                                ${escapeHtml(item.status)}
+                            </span>
+
+                        </div>
+
+                        <div class="healing-action">
+                            ${escapeHtml(item.action)}
+                        </div>
+
+                        <div class="healing-message">
+                            ${escapeHtml(item.message)}
+                        </div>
+
+                        <div class="healing-time">
+                            ${formatTime(item.timestamp)}
+                        </div>
+
+                    </div>
+
+                </div>
+
+            `;
+
+        }).join("");
+
 }
 
 
-/* ================================================= */
-/* LOAD DOCKER STATS                                 */
-/* ================================================= */
+// =====================================================
+// TIME FORMAT
+// =====================================================
 
-async function loadStats() {
+function formatTime(timestamp) {
+
+    if (!timestamp) {
+        return "";
+    }
 
     try {
 
-        const response =
-            await fetch(
-                "/api/stats",
-                {
-                    cache:
-                        "no-store"
-                }
-            );
+        return new Date(timestamp)
+            .toLocaleString();
+
+    } catch {
+
+        return timestamp;
+
+    }
+
+}
 
 
-        if (!response.ok) {
+// =====================================================
+// LAST UPDATED
+// =====================================================
 
-            throw new Error(
-                "Failed to fetch Docker stats"
-            );
-        }
+function updateLastUpdated() {
 
-
-        const data =
-            await response.json();
-
-
-        setConnectionStatus(
-            true
-        );
-
-
-        const containers =
-            Array.isArray(
-                data.containers
-            )
-                ? data.containers
-                : [];
-
-
-        renderContainers(
-            containers
-        );
-
-
-        renderAlerts(
-            containers
-        );
-
-
-        updateOverview(
-            containers
-        );
-
-
-        const cpuValues =
-            containers.map(
-                container =>
-                    parseFloat(
-                        container.cpu
-                    ) || 0
-            );
-
-
-        const memoryValues =
-            containers.map(
-                container =>
-                    parseFloat(
-                        container.memoryPercent
-                    ) || 0
-            );
-
-
-        const averageCPU =
-            cpuValues.length
-                ? cpuValues.reduce(
-                    (a, b) =>
-                        a + b,
-                    0
-                ) /
-                cpuValues.length
-                : 0;
-
-
-        const averageMemory =
-            memoryValues.length
-                ? memoryValues.reduce(
-                    (a, b) =>
-                        a + b,
-                    0
-                ) /
-                memoryValues.length
-                : 0;
-
-
-        cpuHistory.push(
-            averageCPU
-        );
-
-
-        memoryHistory.push(
-            averageMemory
-        );
-
-
-        if (
-            cpuHistory.length >
-            maxPoints
-        ) {
-
-            cpuHistory.shift();
-        }
-
-
-        if (
-            memoryHistory.length >
-            maxPoints
-        ) {
-
-            memoryHistory.shift();
-        }
-
-
-        drawChart();
-
-
+    const element =
         document.getElementById(
             "last-updated"
-        ).textContent =
-            "Last updated: " +
-            new Date()
-                .toLocaleTimeString();
-
-
-    } catch (error) {
-
-        console.error(
-            "Monitoring error:",
-            error
         );
 
+    if (element) {
 
-        setConnectionStatus(
-            false
-        );
+        element.textContent =
+            new Date().toLocaleTimeString();
 
-
-        document.getElementById(
-            "system-status"
-        ).textContent =
-            "ERROR";
     }
+
 }
 
 
-/* ================================================= */
-/* LOG VIEWER                                        */
-/* ================================================= */
+// =====================================================
+// CURRENT TIME
+// =====================================================
 
-async function viewLogs(
-    id,
-    name
-) {
+function updateTime() {
 
-    currentLogContainerId =
-        id;
-
-
-    currentLogContainerName =
-        name;
-
-
-    const modal =
+    const element =
         document.getElementById(
-            "logs-modal"
+            "current-time"
         );
 
+    if (element) {
 
-    const title =
-        document.getElementById(
-            "logs-title"
-        );
+        element.textContent =
+            new Date().toLocaleTimeString();
 
+    }
 
-    const content =
-        document.getElementById(
-            "logs-content"
-        );
-
-
-    title.textContent =
-        `Docker Logs - ${name}`;
-
-
-    content.textContent =
-        "Loading logs...";
-
-
-    modal.classList.add(
-        "show"
-    );
-
-
-    await loadLogs();
 }
 
 
-/* ================================================= */
-/* LOAD LOGS                                         */
-/* ================================================= */
+// =====================================================
+// LOGS
+// =====================================================
 
-async function loadLogs() {
-
-    if (
-        !currentLogContainerId
-    ) {
-
-        return;
-    }
-
-
-    const content =
-        document.getElementById(
-            "logs-content"
-        );
-
-
-    content.textContent =
-        "Loading logs...";
-
+async function viewLogs(id) {
 
     try {
 
         const response =
             await fetch(
-                `/api/logs/${currentLogContainerId}`,
-                {
-                    cache:
-                        "no-store"
-                }
+                `/api/logs/${id}`
+            );
+
+        const logs =
+            await response.text();
+
+
+        const modal =
+            document.getElementById(
+                "logs-modal"
+            );
+
+        const content =
+            document.getElementById(
+                "logs-content"
             );
 
 
-        const data =
-            await response.json();
+        if (content) {
 
+            content.textContent =
+                logs;
 
-        if (!response.ok) {
-
-            throw new Error(
-                data.message ||
-                "Unable to load logs"
-            );
         }
 
 
-        content.textContent =
-            data.logs &&
-            data.logs.trim()
-                ? data.logs
-                : "No logs available for this container.";
+        if (modal) {
 
+            modal.style.display =
+                "flex";
 
-        content.scrollTop =
-            content.scrollHeight;
-
+        }
 
     } catch (error) {
 
-        content.textContent =
-            `Unable to load logs.
+        alert(
+            "Unable to load logs: " +
+            error.message
+        );
 
-Error:
-${error.message}`;
     }
+
 }
 
 
-/* ================================================= */
-/* CLOSE LOGS                                        */
-/* ================================================= */
+// =====================================================
+// CLOSE LOG MODAL
+// =====================================================
 
 function closeLogs() {
 
@@ -1708,95 +913,107 @@ function closeLogs() {
             "logs-modal"
         );
 
+    if (modal) {
 
-    modal.classList.remove(
-        "show"
-    );
+        modal.style.display =
+            "none";
 
+    }
 
-    currentLogContainerId =
-        null;
-
-
-    currentLogContainerName =
-        "";
 }
 
 
-/* ================================================= */
-/* REFRESH LOGS                                      */
-/* ================================================= */
+// =====================================================
+// MANUAL SELF HEAL
+// =====================================================
 
-async function refreshLogs() {
+async function manualHeal(id) {
 
-    await loadLogs();
-}
+    try {
 
-
-/* ================================================= */
-/* MODAL EVENTS                                      */
-/* ================================================= */
-
-document.addEventListener(
-    "click",
-    function(event) {
-
-        const modal =
-            document.getElementById(
-                "logs-modal"
+        const response =
+            await fetch(
+                `/api/self-heal/${id}`,
+                {
+                    method: "POST"
+                }
             );
 
+        const result =
+            await response.json();
 
-        if (
-            event.target ===
-            modal
-        ) {
 
-            closeLogs();
+        if (!response.ok) {
+
+            throw new Error(
+                result.error ||
+                "Healing failed"
+            );
+
         }
-    }
-);
 
+
+        alert(
+            "✅ Container recovered successfully"
+        );
+
+
+        await loadStats();
+
+        await loadHealingHistory();
+
+    } catch (error) {
+
+        alert(
+            "❌ Self-healing failed: " +
+            error.message
+        );
+
+    }
+
+}
+
+
+// =====================================================
+// REFRESH HEALING BUTTON
+// =====================================================
+
+window.loadHealingHistory =
+    loadHealingHistory;
+
+
+// =====================================================
+// INITIAL LOAD
+// =====================================================
 
 document.addEventListener(
-    "keydown",
-    function(event) {
+    "DOMContentLoaded",
+    () => {
 
-        if (
-            event.key ===
-            "Escape"
-        ) {
+        console.log(
+            "Dashboard frontend started"
+        );
 
-            closeLogs();
-        }
+        loadStats();
+
+        loadHealingHistory();
+
+        updateTime();
+
+        setInterval(
+            loadStats,
+            5000
+        );
+
+        setInterval(
+            loadHealingHistory,
+            5000
+        );
+
+        setInterval(
+            updateTime,
+            1000
+        );
+
     }
-);
-
-
-/* ================================================= */
-/* START                                             */
-/* ================================================= */
-
-loadStats();
-
-loadHealingHistory();
-
-updateTime();
-
-
-setInterval(
-    loadStats,
-    5000
-);
-
-
-setInterval(
-    loadHealingHistory,
-    5000
-);
-
-
-setInterval(
-    updateTime,
-    1000
 );

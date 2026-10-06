@@ -2,630 +2,586 @@
 const express = require("express");
 const Docker = require("dockerode");
 const path = require("path");
+const fs = require("fs");
+const client = require("prom-client");
 
 const app = express();
 
 const PORT = 80;
-
 const docker = new Docker({
     socketPath: "/var/run/docker.sock"
 });
 
-
-/* ================================================= */
-/* CONFIGURATION                                     */
-/* ================================================= */
-
 const SELF_HEAL_INTERVAL = 10000;
 
-const healingInProgress = new Set();
-
-const healingHistory = [];
-
-const MAX_HISTORY = 100;
+let healingInProgress = new Set();
 
 
-/* ================================================= */
-/* STATIC FRONTEND                                   */
-/* ================================================= */
+// =====================================================
+// PERSISTENT SELF-HEALING HISTORY
+// =====================================================
 
-app.use(
-    express.static(
-        path.join(__dirname, "app")
-    )
-);
+const DATA_DIR = path.join(__dirname, "data");
+const HISTORY_FILE = path.join(DATA_DIR, "healing-history.json");
 
+if (!fs.existsSync(DATA_DIR)) {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+}
 
-/* ================================================= */
-/* ADD HEALING HISTORY                               */
-/* ================================================= */
+if (!fs.existsSync(HISTORY_FILE)) {
+    fs.writeFileSync(HISTORY_FILE, "[]");
+}
 
-function addHealingHistory(
-    name,
-    action,
-    status,
-    message
-) {
+function loadHealingHistory() {
+    try {
+        const data = fs.readFileSync(HISTORY_FILE, "utf8");
+        return JSON.parse(data);
+    } catch (error) {
+        console.error("Error loading healing history:", error);
+        return [];
+    }
+}
 
-    const record = {
+function saveHealingHistory() {
+    try {
+        fs.writeFileSync(
+            HISTORY_FILE,
+            JSON.stringify(healingHistory, null, 2)
+        );
+    } catch (error) {
+        console.error("Error saving healing history:", error);
+    }
+}
 
-        timestamp:
-            new Date().toISOString(),
+let healingHistory = loadHealingHistory();
 
-        container:
-            name,
+function addHealingHistory(record) {
 
-        action:
-            action,
+    healingHistory.unshift(record);
 
-        status:
-            status,
-
-        message:
-            message
-    };
-
-
-    healingHistory.unshift(
-        record
-    );
-
-
-    if (
-        healingHistory.length >
-        MAX_HISTORY
-    ) {
-
-        healingHistory.pop();
+    if (healingHistory.length > 100) {
+        healingHistory = healingHistory.slice(0, 100);
     }
 
-
-    console.log(
-        `[SELF-HEAL] ${name} | ${action} | ${status} | ${message}`
-    );
+    saveHealingHistory();
 }
 
 
-/* ================================================= */
-/* DOCKER STATS API                                  */
-/* ================================================= */
+// =====================================================
+// PROMETHEUS CONFIGURATION
+// =====================================================
 
-app.get(
-    "/api/stats",
-    async (req, res) => {
+const register = new client.Registry();
 
-        try {
+client.collectDefaultMetrics({
+    register: register
+});
 
-            const containers =
-                await docker.listContainers({
-                    all: true
-                });
+const totalContainersMetric = new client.Gauge({
+    name: "docker_containers_total",
+    help: "Total number of Docker containers"
+});
 
-            const results = [];
+const runningContainersMetric = new client.Gauge({
+    name: "docker_containers_running",
+    help: "Number of running Docker containers"
+});
 
+const stoppedContainersMetric = new client.Gauge({
+    name: "docker_containers_stopped",
+    help: "Number of stopped Docker containers"
+});
 
-            for (
-                const containerInfo
-                of containers
-            ) {
+const unhealthyContainersMetric = new client.Gauge({
+    name: "docker_containers_unhealthy",
+    help: "Number of unhealthy Docker containers"
+});
 
-                try {
+const containerCpuMetric = new client.Gauge({
+    name: "docker_container_cpu_percent",
+    help: "Docker container CPU usage percentage",
+    labelNames: ["container"]
+});
 
-                    const container =
-                        docker.getContainer(
-                            containerInfo.Id
-                        );
+const containerMemoryMetric = new client.Gauge({
+    name: "docker_container_memory_mb",
+    help: "Docker container memory usage in MB",
+    labelNames: ["container"]
+});
 
-                    const info =
-                        await container.inspect();
+const healingEventsMetric = new client.Counter({
+    name: "docker_self_healing_events_total",
+    help: "Total number of self-healing events"
+});
 
+const successfulHealingMetric = new client.Counter({
+    name: "docker_self_healing_success_total",
+    help: "Total number of successful self-healing events"
+});
 
-                    let cpuPercent = 0;
+const failedHealingMetric = new client.Counter({
+    name: "docker_self_healing_failed_total",
+    help: "Total number of failed self-healing events"
+});
 
-                    let memoryUsage = 0;
+register.registerMetric(totalContainersMetric);
+register.registerMetric(runningContainersMetric);
+register.registerMetric(stoppedContainersMetric);
+register.registerMetric(unhealthyContainersMetric);
+register.registerMetric(containerCpuMetric);
+register.registerMetric(containerMemoryMetric);
+register.registerMetric(healingEventsMetric);
+register.registerMetric(successfulHealingMetric);
+register.registerMetric(failedHealingMetric);
 
-                    let memoryLimit = 0;
 
+// =====================================================
+// STATIC FRONTEND
+// =====================================================
 
-                    /* ================================= */
-                    /* RESOURCE STATS                     */
-                    /* ================================= */
+app.use(express.static(path.join(__dirname, "app")));
 
-                    if (
-                        info.State &&
-                        info.State.Running
-                    ) {
 
-                        try {
+// =====================================================
+// PROMETHEUS METRICS ENDPOINT
+// =====================================================
 
-                            const stats =
-                                await container.stats({
-                                    stream: false
-                                });
+app.get("/metrics", async (req, res) => {
 
+    try {
 
-                            const cpuDelta =
-                                stats.cpu_stats.cpu_usage.total_usage -
-                                stats.precpu_stats.cpu_usage.total_usage;
+        const output = await register.metrics();
 
+        res.set("Content-Type", register.contentType);
 
-                            const systemDelta =
-                                stats.cpu_stats.system_cpu_usage -
-                                stats.precpu_stats.system_cpu_usage;
+        res.end(output);
 
+    } catch (error) {
 
-                            if (
-                                systemDelta > 0 &&
-                                cpuDelta > 0
-                            ) {
+        console.error("Prometheus metrics error:", error);
 
-                                const onlineCPUs =
-                                    stats.cpu_stats.online_cpus ||
-                                    1;
+        res.status(500).send("Metrics error");
 
+    }
 
-                                cpuPercent =
-                                    (
-                                        cpuDelta /
-                                        systemDelta
-                                    ) *
-                                    onlineCPUs *
-                                    100;
-                            }
+});
 
 
-                            memoryUsage =
-                                stats.memory_stats.usage ||
-                                0;
+// =====================================================
+// GET DOCKER CONTAINER STATS
+// =====================================================
 
+async function getContainerStats(container) {
 
-                            memoryLimit =
-                                stats.memory_stats.limit ||
-                                0;
+    try {
 
-                        } catch (statsError) {
+        const info = await container.inspect();
 
-                            console.log(
-                                `Stats unavailable for ${info.Name}`
-                            );
-                        }
-                    }
+        const stats = await container.stats({
+            stream: false
+        });
 
+        let cpuPercent = 0;
 
-                    /* ================================= */
-                    /* MEMORY PERCENT                    */
-                    /* ================================= */
+        if (
+            stats.cpu_stats &&
+            stats.precpu_stats &&
+            stats.cpu_stats.cpu_usage &&
+            stats.precpu_stats.cpu_usage
+        ) {
 
-                    const memoryPercent =
-                        memoryLimit > 0
-                            ? (
-                                memoryUsage /
-                                memoryLimit
-                            ) * 100
-                            : 0;
+            const cpuDelta =
+                stats.cpu_stats.cpu_usage.total_usage -
+                stats.precpu_stats.cpu_usage.total_usage;
 
+            const systemDelta =
+                stats.cpu_stats.system_cpu_usage -
+                stats.precpu_stats.system_cpu_usage;
 
-                    /* ================================= */
-                    /* HEALTH                             */
-                    /* ================================= */
+            const onlineCPUs =
+                stats.cpu_stats.online_cpus || 1;
 
-                    let healthStatus =
-                        "none";
+            if (systemDelta > 0 && cpuDelta > 0) {
 
+                cpuPercent =
+                    (cpuDelta / systemDelta) *
+                    onlineCPUs *
+                    100;
 
-                    if (
-                        info.State &&
-                        info.State.Health
-                    ) {
-
-                        healthStatus =
-                            info.State.Health.Status;
-                    }
-
-
-                    /* ================================= */
-                    /* IMAGE                              */
-                    /* ================================= */
-
-                    const image =
-                        info.Config &&
-                        info.Config.Image
-                            ? info.Config.Image
-                            : "Unknown";
-
-
-                    /* ================================= */
-                    /* PORTS                              */
-                    /* ================================= */
-
-                    const ports = [];
-
-
-                    if (
-                        containerInfo.Ports &&
-                        containerInfo.Ports.length > 0
-                    ) {
-
-                        containerInfo.Ports.forEach(
-                            port => {
-
-                                if (
-                                    port.PublicPort &&
-                                    port.PrivatePort
-                                ) {
-
-                                    ports.push(
-                                        `${port.PublicPort}:${port.PrivatePort}`
-                                    );
-
-                                } else {
-
-                                    ports.push(
-                                        `${port.PrivatePort}`
-                                    );
-                                }
-
-                            }
-                        );
-                    }
-
-
-                    /* ================================= */
-                    /* RESULT                             */
-                    /* ================================= */
-
-                    results.push({
-
-                        id:
-                            info.Id,
-
-                        name:
-                            info.Name
-                                ? info.Name.replace(
-                                    "/",
-                                    ""
-                                )
-                                : "Unknown",
-
-                        status:
-                            info.State.Status,
-
-                        health:
-                            healthStatus,
-
-                        restartCount:
-                            info.RestartCount ||
-                            0,
-
-                        image:
-                            image,
-
-                        ports:
-                            ports,
-
-                        startedAt:
-                            info.State.StartedAt,
-
-                        finishedAt:
-                            info.State.FinishedAt,
-
-                        cpu:
-                            cpuPercent.toFixed(2),
-
-                        memoryBytes:
-                            memoryUsage,
-
-                        memoryMB:
-                            (
-                                memoryUsage /
-                                1024 /
-                                1024
-                            ).toFixed(2),
-
-                        memoryPercent:
-                            memoryPercent.toFixed(2)
-
-                    });
-
-
-                } catch (containerError) {
-
-                    console.error(
-                        "Container inspection error:",
-                        containerError.message
-                    );
-                }
             }
 
-
-            res.json({
-
-                count:
-                    results.length,
-
-                containers:
-                    results
-
-            });
-
-
-        } catch (error) {
-
-            console.error(
-                "Docker API Error:",
-                error.message
-            );
-
-
-            res.status(500).json({
-
-                error:
-                    "Unable to read Docker containers",
-
-                message:
-                    error.message
-
-            });
         }
+
+        const memoryUsage =
+            stats.memory_stats?.usage || 0;
+
+        const memoryLimit =
+            stats.memory_stats?.limit || 0;
+
+        const memoryPercent =
+            memoryLimit > 0
+                ? (memoryUsage / memoryLimit) * 100
+                : 0;
+
+        let health = "none";
+
+        if (info.State && info.State.Health) {
+            health = info.State.Health.Status;
+        }
+
+        return {
+
+            id: info.Id.substring(0, 12),
+
+            name:
+                info.Name
+                    ? info.Name.replace("/", "")
+                    : "unknown",
+
+            status: info.State?.Status || "unknown",
+
+            health: health,
+
+            restartCount:
+                info.RestartCount || 0,
+
+            image:
+                info.Config?.Image || "unknown",
+
+            ports:
+                info.HostConfig?.PortBindings || {},
+
+            startedAt:
+                info.State?.StartedAt || "",
+
+            finishedAt:
+                info.State?.FinishedAt || "",
+
+            cpu:
+                Number(cpuPercent.toFixed(2)),
+
+            memoryBytes:
+                memoryUsage,
+
+            memoryMB:
+                Number((memoryUsage / 1024 / 1024).toFixed(2)),
+
+            memoryPercent:
+                Number(memoryPercent.toFixed(2))
+
+        };
+
+    } catch (error) {
+
+        console.error(
+            "Error getting container stats:",
+            error.message
+        );
+
+        return null;
+
     }
-);
+
+}
 
 
-/* ================================================= */
-/* CONTAINER LOGS                                    */
-/* ================================================= */
+// =====================================================
+// API: CONTAINER STATS
+// =====================================================
 
-app.get(
-    "/api/logs/:id",
-    async (req, res) => {
+app.get("/api/stats", async (req, res) => {
 
-        try {
+    try {
+
+        const containers =
+            await docker.listContainers({
+                all: true
+            });
+
+        const results = [];
+
+        for (const item of containers) {
 
             const container =
-                docker.getContainer(
-                    req.params.id
-                );
+                docker.getContainer(item.Id);
 
+            const stats =
+                await getContainerStats(container);
 
-            const logs =
-                await container.logs({
-
-                    stdout: true,
-
-                    stderr: true,
-
-                    tail: 100,
-
-                    timestamps: true
-
-                });
-
-
-            res.json({
-
-                logs:
-                    logs.toString()
-
-            });
-
-
-        } catch (error) {
-
-            res.status(500).json({
-
-                error:
-                    "Unable to read container logs",
-
-                message:
-                    error.message
-
-            });
-        }
-    }
-);
-
-
-/* ================================================= */
-/* CONTAINER HEALTH                                  */
-/* ================================================= */
-
-app.get(
-    "/api/health/:id",
-    async (req, res) => {
-
-        try {
-
-            const container =
-                docker.getContainer(
-                    req.params.id
-                );
-
-
-            const info =
-                await container.inspect();
-
-
-            let health =
-                "none";
-
-
-            if (
-                info.State &&
-                info.State.Health
-            ) {
-
-                health =
-                    info.State.Health.Status;
+            if (stats) {
+                results.push(stats);
             }
 
-
-            res.json({
-
-                id:
-                    info.Id,
-
-                name:
-                    info.Name
-                        ? info.Name.replace(
-                            "/",
-                            ""
-                        )
-                        : "Unknown",
-
-                status:
-                    info.State.Status,
-
-                health:
-                    health,
-
-                restartCount:
-                    info.RestartCount ||
-                    0
-
-            });
-
-
-        } catch (error) {
-
-            res.status(500).json({
-
-                error:
-                    "Unable to check container health",
-
-                message:
-                    error.message
-
-            });
         }
+
+        // Update Prometheus metrics
+
+        totalContainersMetric.set(results.length);
+
+        const running =
+            results.filter(
+                c => c.status === "running"
+            ).length;
+
+        const stopped =
+            results.filter(
+                c => c.status !== "running"
+            ).length;
+
+        const unhealthy =
+            results.filter(
+                c => c.health === "unhealthy"
+            ).length;
+
+        runningContainersMetric.set(running);
+
+        stoppedContainersMetric.set(stopped);
+
+        unhealthyContainersMetric.set(unhealthy);
+
+
+        // Update per-container metrics
+
+        for (const container of results) {
+
+            containerCpuMetric
+                .labels(container.name)
+                .set(container.cpu);
+
+            containerMemoryMetric
+                .labels(container.name)
+                .set(container.memoryMB);
+
+        }
+
+        res.json(results);
+
+    } catch (error) {
+
+        console.error(
+            "Stats API error:",
+            error
+        );
+
+        res.status(500).json({
+            error: error.message
+        });
+
     }
-);
+
+});
 
 
-/* ================================================= */
-/* SELF-HEALING HISTORY API                          */
-/* ================================================= */
+// =====================================================
+// API: CONTAINER LOGS
+// =====================================================
+
+app.get("/api/logs/:id", async (req, res) => {
+
+    try {
+
+        const container =
+            docker.getContainer(req.params.id);
+
+        const logs =
+            await container.logs({
+
+                stdout: true,
+
+                stderr: true,
+
+                tail: 200,
+
+                timestamps: true
+
+            });
+
+        res.send(logs.toString());
+
+    } catch (error) {
+
+        res.status(500).send(
+            "Unable to fetch logs: " +
+            error.message
+        );
+
+    }
+
+});
+
+
+// =====================================================
+// API: CONTAINER HEALTH
+// =====================================================
+
+app.get("/api/health/:id", async (req, res) => {
+
+    try {
+
+        const container =
+            docker.getContainer(req.params.id);
+
+        const info =
+            await container.inspect();
+
+        res.json({
+
+            name:
+                info.Name
+                    ? info.Name.replace("/", "")
+                    : "unknown",
+
+            status:
+                info.State?.Status,
+
+            health:
+                info.State?.Health?.Status || "none",
+
+            restartCount:
+                info.RestartCount || 0
+
+        });
+
+    } catch (error) {
+
+        res.status(500).json({
+            error: error.message
+        });
+
+    }
+
+});
+
+
+// =====================================================
+// API: SELF-HEALING HISTORY
+// =====================================================
 
 app.get(
     "/api/self-healing/history",
     (req, res) => {
 
-        res.json({
+        res.json(
+            healingHistory
+        );
 
-            count:
-                healingHistory.length,
+    }
+);
 
-            history:
-                healingHistory
+
+// =====================================================
+// MANUAL SELF-HEAL
+// =====================================================
+
+app.post("/api/self-heal/:id", async (req, res) => {
+
+    const id = req.params.id;
+
+    try {
+
+        const container =
+            docker.getContainer(id);
+
+        const info =
+            await container.inspect();
+
+        const containerName =
+            info.Name
+                ? info.Name.replace("/", "")
+                : id;
+
+        addHealingHistory({
+
+            container: containerName,
+
+            containerId: id.substring(0, 12),
+
+            action: "MANUAL_RESTART",
+
+            status: "STARTED",
+
+            message:
+                "Manual recovery started",
+
+            timestamp:
+                new Date().toISOString()
 
         });
-    }
-);
 
+        healingEventsMetric.inc();
 
-/* ================================================= */
-/* MANUAL SELF-HEAL                                 */
-/* ================================================= */
+        await container.restart();
 
-app.post(
-    "/api/self-heal/:id",
-    async (req, res) => {
+        await new Promise(
+            resolve => setTimeout(resolve, 3000)
+        );
 
-        try {
+        addHealingHistory({
 
-            const container =
-                docker.getContainer(
-                    req.params.id
-                );
+            container: containerName,
 
+            containerId: id.substring(0, 12),
 
-            const info =
-                await container.inspect();
+            action: "MANUAL_RESTART",
 
+            status: "SUCCESS",
 
-            const name =
-                info.Name
-                    ? info.Name.replace(
-                        "/",
-                        ""
-                    )
-                    : "Unknown";
+            message:
+                "Container manually restarted successfully",
 
+            timestamp:
+                new Date().toISOString()
 
-            if (
-                name ===
-                "monitoring-dashboard"
-            ) {
+        });
 
-                return res.json({
+        successfulHealingMetric.inc();
 
-                    success:
-                        false,
+        res.json({
 
-                    message:
-                        "Monitoring dashboard is protected",
+            success: true,
 
-                    container:
-                        name
-
-                });
-            }
-
-
-            addHealingHistory(
-                name,
-                "MANUAL_RESTART",
-                "STARTED",
-                "Manual self-healing requested"
-            );
-
-
-            await container.restart();
-
-
-            addHealingHistory(
-                name,
-                "MANUAL_RESTART",
-                "SUCCESS",
+            message:
                 "Container restarted successfully"
-            );
 
+        });
 
-            res.json({
+    } catch (error) {
 
-                success:
-                    true,
+        failedHealingMetric.inc();
 
-                message:
-                    `Container ${name} restarted successfully`,
+        addHealingHistory({
 
-                container:
-                    name
+            container: id.substring(0, 12),
 
-            });
+            containerId: id.substring(0, 12),
 
+            action: "MANUAL_RESTART",
 
-        } catch (error) {
+            status: "FAILED",
 
-            res.status(500).json({
+            message: error.message,
 
-                success:
-                    false,
+            timestamp:
+                new Date().toISOString()
 
-                error:
-                    "Unable to restart container",
+        });
 
-                message:
-                    error.message
+        res.status(500).json({
 
-            });
-        }
+            success: false,
+
+            error: error.message
+
+        });
+
     }
-);
+
+});
 
 
-/* ================================================= */
-/* AUTOMATIC SELF-HEALING                            */
-/* ================================================= */
+// =====================================================
+// AUTOMATIC SELF-HEALING
+// =====================================================
 
 async function automaticSelfHealing() {
 
@@ -636,321 +592,270 @@ async function automaticSelfHealing() {
                 all: true
             });
 
+        for (const item of containers) {
 
-        for (
-            const containerInfo
-            of containers
-        ) {
+            const container =
+                docker.getContainer(item.Id);
+
+            if (
+                healingInProgress.has(item.Id)
+            ) {
+                continue;
+            }
 
             try {
-
-                const container =
-                    docker.getContainer(
-                        containerInfo.Id
-                    );
-
 
                 const info =
                     await container.inspect();
 
-
-                const name =
-                    info.Name
-                        ? info.Name.replace(
-                            "/",
-                            ""
-                        )
-                        : "Unknown";
-
-
-                /* ================================= */
-                /* PROTECT DASHBOARD                 */
-                /* ================================= */
-
-                if (
-                    name ===
-                    "monitoring-dashboard"
-                ) {
-
-                    continue;
-                }
-
-
-                /* ================================= */
-                /* DUPLICATE LOCK                   */
-                /* ================================= */
-
-                if (
-                    healingInProgress.has(
-                        info.Id
-                    )
-                ) {
-
-                    continue;
-                }
-
-
                 const status =
-                    info.State &&
-                    info.State.Status
-                        ? info.State.Status.toLowerCase()
-                        : "";
-
+                    info.State?.Status;
 
                 const health =
-                    info.State &&
-                    info.State.Health
-                        ? info.State.Health.Status.toLowerCase()
-                        : "none";
+                    info.State?.Health?.Status;
 
-
-                const stopped =
-                    status === "exited" ||
-                    status === "dead";
-
-
-                const unhealthy =
+                const isUnhealthy =
                     health === "unhealthy";
 
-
-                if (
-                    !stopped &&
-                    !unhealthy
-                ) {
-
+                if (!isUnhealthy) {
                     continue;
                 }
 
+                healingInProgress.add(item.Id);
 
-                /* ================================= */
-                /* LOCK CONTAINER                    */
-                /* ================================= */
+                const containerName =
+                    info.Name
+                        ? info.Name.replace("/", "")
+                        : item.Id.substring(0, 12);
 
-                healingInProgress.add(
-                    info.Id
+
+                // DETECTED
+
+                addHealingHistory({
+
+                    container: containerName,
+
+                    containerId:
+                        item.Id.substring(0, 12),
+
+                    action:
+                        "AUTOMATIC_RECOVERY",
+
+                    status:
+                        "DETECTED",
+
+                    message:
+                        "Unhealthy container detected",
+
+                    timestamp:
+                        new Date().toISOString()
+
+                });
+
+
+                // STARTED
+
+                addHealingHistory({
+
+                    container: containerName,
+
+                    containerId:
+                        item.Id.substring(0, 12),
+
+                    action:
+                        "AUTOMATIC_RECOVERY",
+
+                    status:
+                        "STARTED",
+
+                    message:
+                        "Automatic container restart started",
+
+                    timestamp:
+                        new Date().toISOString()
+
+                });
+
+                healingEventsMetric.inc();
+
+
+                // RESTART
+
+                await container.restart();
+
+
+                // WAIT
+
+                await new Promise(
+                    resolve =>
+                        setTimeout(resolve, 5000)
                 );
 
 
-                /* ================================= */
-                /* RECORD FAILURE                    */
-                /* ================================= */
+                // CHECK RESULT
 
-                addHealingHistory(
-                    name,
-                    "FAILURE_DETECTED",
-                    "DETECTED",
-                    unhealthy
-                        ? "Container healthcheck failed"
-                        : "Container stopped unexpectedly"
-                );
+                const updatedInfo =
+                    await container.inspect();
+
+                const updatedStatus =
+                    updatedInfo.State?.Status;
+
+                const updatedHealth =
+                    updatedInfo.State?.Health?.Status;
 
 
-                /* ================================= */
-                /* RESTART ATTEMPT                    */
-                /* ================================= */
+                if (
+                    updatedStatus === "running" &&
+                    updatedHealth !== "unhealthy"
+                ) {
 
-                addHealingHistory(
-                    name,
-                    "AUTOMATIC_RESTART",
-                    "STARTED",
-                    "Automatic restart initiated"
-                );
+                    addHealingHistory({
 
+                        container: containerName,
 
-                try {
+                        containerId:
+                            item.Id.substring(0, 12),
 
-                    await container.restart();
+                        action:
+                            "AUTOMATIC_RECOVERY",
 
-
-                    /* ============================= */
-                    /* WAIT FOR DOCKER STATE          */
-                    /* ============================= */
-
-                    await new Promise(
-                        resolve =>
-                            setTimeout(
-                                resolve,
-                                5000
-                            )
-                    );
-
-
-                    const updatedInfo =
-                        await container.inspect();
-
-
-                    const updatedStatus =
-                        updatedInfo.State.Status;
-
-
-                    let updatedHealth =
-                        "none";
-
-
-                    if (
-                        updatedInfo.State.Health
-                    ) {
-
-                        updatedHealth =
-                            updatedInfo.State.Health.Status;
-                    }
-
-
-                    /* ============================= */
-                    /* RECOVERY RESULT                */
-                    /* ============================= */
-
-                    if (
-                        updatedStatus ===
-                            "running" &&
-                        updatedHealth !==
-                            "unhealthy"
-                    ) {
-
-                        addHealingHistory(
-                            name,
-                            "RECOVERY",
+                        status:
                             "SUCCESS",
-                            "Container recovered successfully"
-                        );
 
+                        message:
+                            "Container recovered successfully",
 
-                        console.log(
-                            `✅ ${name} recovered successfully`
-                        );
+                        timestamp:
+                            new Date().toISOString()
 
-                    } else {
+                    });
 
-                        addHealingHistory(
-                            name,
-                            "RECOVERY",
+                    successfulHealingMetric.inc();
+
+                } else {
+
+                    addHealingHistory({
+
+                        container: containerName,
+
+                        containerId:
+                            item.Id.substring(0, 12),
+
+                        action:
+                            "AUTOMATIC_RECOVERY",
+
+                        status:
                             "FAILED",
-                            `Container status: ${updatedStatus}, health: ${updatedHealth}`
-                        );
 
+                        message:
+                            "Container restart completed but health is still not normal",
 
-                        console.log(
-                            `⚠️ ${name} still requires attention`
-                        );
-                    }
+                        timestamp:
+                            new Date().toISOString()
 
+                    });
 
-                } catch (healError) {
+                    failedHealingMetric.inc();
 
-                    addHealingHistory(
-                        name,
-                        "AUTOMATIC_RESTART",
-                        "FAILED",
-                        healError.message
-                    );
-
-
-                    console.error(
-                        `❌ Self-healing failed for ${name}:`,
-                        healError.message
-                    );
                 }
 
-
-                /* ================================= */
-                /* RELEASE LOCK                     */
-                /* ================================= */
-
-                setTimeout(
-                    () => {
-
-                        healingInProgress.delete(
-                            info.Id
-                        );
-
-                    },
-                    15000
-                );
-
-
-            } catch (containerError) {
+            } catch (error) {
 
                 console.error(
-                    "Self-healing inspection error:",
-                    containerError.message
+                    "Self-healing error:",
+                    error.message
                 );
-            }
-        }
 
+                failedHealingMetric.inc();
+
+                addHealingHistory({
+
+                    container:
+                        item.Names?.[0]
+                            ?.replace("/", "") ||
+                        item.Id.substring(0, 12),
+
+                    containerId:
+                        item.Id.substring(0, 12),
+
+                    action:
+                        "AUTOMATIC_RECOVERY",
+
+                    status:
+                        "FAILED",
+
+                    message:
+                        error.message,
+
+                    timestamp:
+                        new Date().toISOString()
+
+                });
+
+            } finally {
+
+                healingInProgress.delete(
+                    item.Id
+                );
+
+            }
+
+        }
 
     } catch (error) {
 
         console.error(
-            "Self-healing engine error:",
+            "Automatic self-healing engine error:",
             error.message
         );
+
     }
+
 }
 
 
-/* ================================================= */
-/* START BACKGROUND SELF-HEALING                    */
-/* ================================================= */
+// =====================================================
+// HEALTH ENDPOINT
+// =====================================================
 
-setInterval(
-    automaticSelfHealing,
-    SELF_HEAL_INTERVAL
-);
+app.get("/health", (req, res) => {
 
+    res.json({
 
-/* ================================================= */
-/* ROOT HEALTH                                      */
-/* ================================================= */
+        status: "UP",
 
-app.get(
-    "/health",
-    (req, res) => {
+        service:
+            "Docker Monitoring Dashboard",
 
-        res.json({
+        timestamp:
+            new Date().toISOString()
 
-            status:
-                "UP",
+    });
 
-            service:
-                "Docker Monitoring Platform",
-
-            selfHealing:
-                "ACTIVE",
-
-            historyRecords:
-                healingHistory.length,
-
-            timestamp:
-                new Date().toISOString()
-
-        });
-    }
-);
+});
 
 
-/* ================================================= */
-/* START SERVER                                     */
-/* ================================================= */
+// =====================================================
+// START SERVER
+// =====================================================
 
-app.listen(
-    PORT,
-    () => {
+app.listen(PORT, () => {
 
-        console.log(
-            `Monitoring dashboard running on port ${PORT}`
-        );
+    console.log(
+        `Docker Monitoring Dashboard running on port ${PORT}`
+    );
 
-        console.log(
-            "🔧 Automatic self-healing engine ACTIVE"
-        );
+    console.log(
+        "Prometheus metrics available at /metrics"
+    );
 
-        console.log(
-            "📋 Self-healing history ACTIVE"
-        );
+    console.log(
+        "Automatic self-healing engine started"
+    );
 
-        console.log(
-            `⏱️ Self-healing interval: ${SELF_HEAL_INTERVAL / 1000} seconds`
-        );
+    setInterval(
+        automaticSelfHealing,
+        SELF_HEAL_INTERVAL
+    );
 
-    }
-);
+});
