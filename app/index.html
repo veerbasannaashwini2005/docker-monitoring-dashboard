@@ -1,0 +1,464 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        Docker DevOps Monitoring Platform
+    </title>
+
+    <link
+        rel="stylesheet"
+        href="style.css"
+    >
+
+</head>
+
+
+<body>
+
+
+<div class="dashboard">
+
+
+    <!-- ================= HEADER ================= -->
+
+    <header class="header">
+
+        <div>
+
+            <h1>
+                Docker DevOps Monitoring Platform
+            </h1>
+
+            <p>
+                Real-time container monitoring & system health
+            </p>
+
+        </div>
+
+
+        <div class="connection">
+
+            <span
+                id="connection-dot"
+            ></span>
+
+            <span
+                id="connection-status"
+            >
+                Connecting...
+            </span>
+
+        </div>
+
+    </header>
+
+
+    <!-- ================= OVERVIEW ================= -->
+
+    <section class="overview">
+
+
+        <div class="overview-card">
+
+            <span>
+                Total Containers
+            </span>
+
+            <strong
+                id="total-containers"
+            >
+                0
+            </strong>
+
+        </div>
+
+
+        <div class="overview-card">
+
+            <span>
+                Running
+            </span>
+
+            <strong
+                id="running-containers"
+            >
+                0
+            </strong>
+
+        </div>
+
+
+        <div class="overview-card">
+
+            <span>
+                Stopped
+            </span>
+
+            <strong
+                id="stopped-containers"
+            >
+                0
+            </strong>
+
+        </div>
+
+
+        <div class="overview-card">
+
+            <span>
+                System Status
+            </span>
+
+            <strong
+                id="system-status"
+            >
+                CHECKING
+            </strong>
+
+        </div>
+
+
+    </section>
+
+
+    <!-- ================= ALERTS ================= -->
+
+    <section class="alerts-section">
+
+        <div class="alerts-header">
+
+            <div>
+
+                <h2>
+                    🚨 System Alerts
+                </h2>
+
+                <p>
+                    Real-time container health and resource alerts
+                </p>
+
+            </div>
+
+            <div
+                id="alert-count"
+                class="alert-count"
+            >
+                0 Alerts
+            </div>
+
+        </div>
+
+
+        <div
+            id="alerts-list"
+            class="alerts-list"
+        >
+
+            <div class="no-alerts">
+
+                ✅ No active alerts
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- ================= SELF HEALING ================= -->
+
+    <section class="healing-section">
+
+
+        <div class="healing-header">
+
+            <div>
+
+                <h2>
+                    🔧 Self-Healing Activity
+                </h2>
+
+                <p>
+                    Automatic container recovery history
+                </p>
+
+            </div>
+
+
+            <button
+                class="healing-refresh"
+                onclick="loadHealingHistory()"
+            >
+
+                🔄 Refresh
+
+            </button>
+
+        </div>
+
+
+        <div
+            id="healing-history"
+            class="healing-history"
+        >
+
+            <div class="healing-loading">
+
+                Loading self-healing history...
+
+            </div>
+
+        </div>
+
+
+    </section>
+
+
+    <!-- ================= CONTAINER MONITORING ================= -->
+
+    <section class="section">
+
+
+        <div class="section-title">
+
+
+            <div>
+
+                <h2>
+                    Container Monitoring
+                </h2>
+
+                <p>
+                    Live Docker container resource usage
+                </p>
+
+            </div>
+
+
+            <span
+                id="last-updated"
+            >
+                Last updated: --
+            </span>
+
+
+        </div>
+
+
+        <div
+            id="container-list"
+            class="container-list"
+        >
+
+            <div class="loading">
+
+                Loading Docker containers...
+
+            </div>
+
+        </div>
+
+
+    </section>
+
+
+    <!-- ================= RESOURCE CHART ================= -->
+
+    <section class="chart-card">
+
+
+        <div class="section-title">
+
+            <div>
+
+                <h2>
+                    Resource Usage
+                </h2>
+
+                <p>
+                    CPU and memory monitoring
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <canvas
+            id="monitoringChart"
+        ></canvas>
+
+
+    </section>
+
+
+    <!-- ================= SYSTEM INFORMATION ================= -->
+
+    <section class="info-card">
+
+
+        <div>
+
+            <strong>
+                Current Time
+            </strong>
+
+            <span
+                id="current-time"
+            >
+                --:--:--
+            </span>
+
+        </div>
+
+
+        <div>
+
+            <strong>
+                Monitoring Interval
+            </strong>
+
+            <span>
+                5 seconds
+            </span>
+
+        </div>
+
+
+        <div>
+
+            <strong>
+                Monitoring Engine
+            </strong>
+
+            <span>
+                Docker API
+            </span>
+
+        </div>
+
+
+        <div>
+
+            <strong>
+                Self-Healing Engine
+            </strong>
+
+            <span>
+                Active
+            </span>
+
+        </div>
+
+
+    </section>
+
+
+    <!-- ================= LOGS MODAL ================= -->
+
+    <div
+        id="logs-modal"
+        class="logs-modal"
+    >
+
+        <div class="logs-window">
+
+
+            <div class="logs-header">
+
+                <div>
+
+                    <h2
+                        id="logs-title"
+                    >
+                        Docker Logs
+                    </h2>
+
+                    <p>
+                        Container output
+                    </p>
+
+                </div>
+
+
+                <button
+                    class="logs-close"
+                    onclick="closeLogs()"
+                >
+                    ✕
+                </button>
+
+            </div>
+
+
+            <div class="logs-toolbar">
+
+                <button
+                    class="logs-refresh"
+                    onclick="refreshLogs()"
+                >
+                    🔄 Refresh Logs
+                </button>
+
+
+                <button
+                    class="logs-close-button"
+                    onclick="closeLogs()"
+                >
+                    Close
+                </button>
+
+            </div>
+
+
+            <div
+                id="logs-content"
+                class="logs-content"
+            >
+
+                Select a container and click
+                "View Logs".
+
+            </div>
+
+
+        </div>
+
+    </div>
+
+
+    <!-- ================= FOOTER ================= -->
+
+    <footer>
+
+        <p>
+
+            AI-Powered Self-Healing Docker Monitoring
+            & DevOps Platform
+
+        </p>
+
+    </footer>
+
+
+</div>
+
+
+<script
+    src="script.js"
+></script>
+
+
+</body>
+
+</html>
